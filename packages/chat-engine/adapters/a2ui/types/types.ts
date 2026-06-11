@@ -1,7 +1,8 @@
 /**
- * A2UI v0.9 协议类型定义
- * 参考 A2UI Specification 0.9 和 @a2ui/core 实现
- * 
+ * A2UI v0.9.1 协议类型定义
+ * v0.9.1 与 v0.9 payload 兼容，消息名仍为 createSurface / updateComponents / updateDataModel / deleteSurface。
+ * 参考：https://a2ui.org/specification/v0.9.1-a2ui/
+ *
  * 核心层：框架无关，可跨 React/Vue 复用
  */
 
@@ -46,23 +47,22 @@ export const stringArrayOrPathSchema = z.union([z.array(z.string()), PathBinding
 /**
  * A2UI Action - 服务端定义的用户交互
  * 支持两种格式：
- * 1. A2UI v0.9 规范格式：{ name: string, context?: Record<string, unknown> }
+ * 1. A2UI v0.9.1 规范格式：{ name: string, context?: Record<string, unknown> }
  * 2. 简化格式（向后兼容）：{ type: string, payload?: unknown }
  */
-export const A2UIActionSchema = z.object({
-  // A2UI v0.9 标准字段
-  name: z.string().optional(),
-  context: z.record(z.unknown()).optional(),
-  // 向后兼容字段
-  type: z.string().optional(),
-  payload: z.unknown().optional(),
-}).refine(
-  (data) => data.name || data.type,
-  { message: 'Action must have either name or type' }
-);
+export const A2UIActionSchema = z
+  .object({
+    // A2UI v0.9.1 标准字段
+    name: z.string().optional(),
+    context: z.record(z.unknown()).optional(),
+    // 向后兼容字段
+    type: z.string().optional(),
+    payload: z.unknown().optional(),
+  })
+  .refine((data) => data.name || data.type, { message: 'Action must have either name or type' });
 
 export interface A2UIAction {
-  /** A2UI v0.9 标准字段 */
+  /** A2UI v0.9.1 标准字段 */
   name?: string;
   context?: Record<string, unknown>;
   /** 向后兼容字段 */
@@ -96,12 +96,9 @@ export interface ActionContext {
 /**
  * Action 处理回调
  */
-export type ActionHandler = (
-  action: A2UIAction,
-  context?: ActionContext
-) => void | Promise<void>;
+export type ActionHandler = (action: A2UIAction, context?: ActionContext) => void | Promise<void>;
 
-// ============= 组件类型定义 (A2UI v0.9) =============
+// ============= 组件类型定义 (A2UI v0.9.1) =============
 
 /**
  * 组件通用属性
@@ -112,7 +109,7 @@ export const componentCommonSchema = z.object({
 });
 
 /**
- * children 属性定义 (A2UI v0.9 规范)
+ * children 属性定义 (A2UI v0.9.1 规范)
  * 支持两种模式：
  * 1. 直接引用: ["comp1", "comp2"]
  * 2. Template 模式: { componentId: "comp1", path: "/items" }
@@ -197,7 +194,7 @@ export interface A2UIListComponent extends A2UIComponentBase {
 }
 
 /**
- * Card 组件 (A2UI v0.9 规范: child 是单个组件 ID)
+ * Card 组件 (A2UI v0.9.1 规范: child 是单个组件 ID)
  */
 export interface A2UICardComponent extends A2UIComponentBase {
   component: 'Card';
@@ -232,7 +229,7 @@ export interface A2UIDividerComponent extends A2UIComponentBase {
 // ============= Interactive Components =============
 
 /**
- * Button 组件 (A2UI v0.9: child 是内容组件 ID)
+ * Button 组件 (A2UI v0.9.1: child 是内容组件 ID)
  */
 export interface A2UIButtonComponent extends A2UIComponentBase {
   component: 'Button';
@@ -258,7 +255,7 @@ export interface A2UICheckBoxComponent extends A2UIComponentBase {
 }
 
 /**
- * TextField 组件 (A2UI v0.9 规范)
+ * TextField 组件 (A2UI v0.9.1 规范)
  */
 export interface A2UITextFieldComponent extends A2UIComponentBase {
   component: 'TextField';
@@ -415,12 +412,14 @@ export const A2UIComponentType = {
   CheckboxGroup: 'CheckboxGroup',
 } as const;
 
-// ============= A2UI v0.9 消息类型 =============
+// ============= A2UI v0.9.1 消息类型 =============
 
 /**
  * createSurface 消息
  */
 export interface CreateSurfaceMessage {
+  /** A2UI 协议版本；v0.9.1 与 v0.9 payload 兼容 */
+  version?: 'v0.9' | 'v0.9.1';
   createSurface: {
     surfaceId: string;
     catalogId: string;
@@ -431,6 +430,8 @@ export interface CreateSurfaceMessage {
  * updateComponents 消息
  */
 export interface UpdateComponentsMessage {
+  /** A2UI 协议版本；v0.9.1 与 v0.9 payload 兼容 */
+  version?: 'v0.9' | 'v0.9.1';
   updateComponents: {
     surfaceId: string;
     components: A2UIComponentBase[];
@@ -441,6 +442,8 @@ export interface UpdateComponentsMessage {
  * updateDataModel 消息
  */
 export interface UpdateDataModelMessage {
+  /** A2UI 协议版本；v0.9.1 与 v0.9 payload 兼容 */
+  version?: 'v0.9' | 'v0.9.1';
   updateDataModel: {
     surfaceId: string;
     path?: string;
@@ -453,6 +456,8 @@ export interface UpdateDataModelMessage {
  * deleteSurface 消息
  */
 export interface DeleteSurfaceMessage {
+  /** A2UI 协议版本；v0.9.1 与 v0.9 payload 兼容 */
+  version?: 'v0.9' | 'v0.9.1';
   deleteSurface: {
     surfaceId: string;
   };
@@ -533,12 +538,17 @@ export interface A2UIMessage {
 
 // ============= Zod Schema (运行时验证) =============
 
-export const A2UIComponentBaseSchema = z.object({
-  id: z.string(),
-  component: z.string(),
-}).passthrough();
+export const A2UIComponentBaseSchema = z
+  .object({
+    id: z.string(),
+    component: z.string(),
+  })
+  .passthrough();
+
+const A2UIVersionSchema = z.enum(['v0.9', 'v0.9.1']).optional();
 
 export const createSurfaceMessageSchema = z.object({
+  version: A2UIVersionSchema,
   createSurface: z.object({
     surfaceId: z.string(),
     catalogId: z.string(),
@@ -546,6 +556,7 @@ export const createSurfaceMessageSchema = z.object({
 });
 
 export const updateComponentsMessageSchema = z.object({
+  version: A2UIVersionSchema,
   updateComponents: z.object({
     surfaceId: z.string(),
     components: z.array(A2UIComponentBaseSchema).min(1),
@@ -553,6 +564,7 @@ export const updateComponentsMessageSchema = z.object({
 });
 
 export const updateDataModelMessageSchema = z.object({
+  version: A2UIVersionSchema,
   updateDataModel: z.object({
     surfaceId: z.string(),
     path: z.string().optional(),
@@ -562,6 +574,7 @@ export const updateDataModelMessageSchema = z.object({
 });
 
 export const deleteSurfaceMessageSchema = z.object({
+  version: A2UIVersionSchema,
   deleteSurface: z.object({
     surfaceId: z.string(),
   }),
@@ -580,10 +593,12 @@ export const A2UISurfaceSchema = z.object({
   state: z.enum(['active', 'closed', 'pending']),
   root: z.any().nullable(),
   data: z.record(z.unknown()).optional(),
-  skeletonHint: z.object({
-    layout: z.enum(['form', 'card', 'list', 'simple', 'wizard']).optional(),
-    rowCount: z.number().optional(),
-    animation: z.enum(['gradient', 'flashed', 'none']).optional(),
-  }).optional(),
+  skeletonHint: z
+    .object({
+      layout: z.enum(['form', 'card', 'list', 'simple', 'wizard']).optional(),
+      rowCount: z.number().optional(),
+      animation: z.enum(['gradient', 'flashed', 'none']).optional(),
+    })
+    .optional(),
   updatedAt: z.number().optional(),
 });
